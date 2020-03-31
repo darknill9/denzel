@@ -246,3 +246,20 @@ app.post("/movies/:id", (request, response) => {
 console.log(error)
 } 
 });
+
+
+
+// Fetch a specific movie
+app.get("/movies/:id", (request, response) => {
+  try {
+    const movie_id = request.params.id;
+
+    collection_movie.findOne({"id": movie_id}, (error, res) => {
+      if(error) {
+        return response.status(500).send(error);
+      }
+      response.send(res);
+    });
+  } catch (error) {
+  console.log(error)
+}});
