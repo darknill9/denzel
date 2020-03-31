@@ -10,7 +10,11 @@ curl -H "Accept: application/json" http://localhost:9292/movies/tt10016180
 
 curl -H "Accept: application/json" http://localhost:9292/movies/search?limit=5&metascore=77
 
-curl -X POST -d '{"date": "2019-03-04", "review": "😍 🔥"}' -H "Content-Type: application/json" http://localhost:9292/movies/tt0328107
+curl -X POST -d '{"date": "2019-03-04", "review": "excellent"}' -H "Content-Type:application/json" http://localhost:9292/movies/tt0328107
+
+but sometimes it doesn't work in CDM windows like that so type this:
+curl -X POST --data "{\"date\": \"2019-03-04\", \"review\": \"good\"}" -H "Content-Type:application/json" http://localhost:9292/movies/tt0328107
+
 
 
 Insomnia for example : 
@@ -24,7 +28,7 @@ http://localhost:9292/movies/tt10016180
 http://localhost:9292/movies/search?limit=5&metascore=77
 
 http://localhost:9292/movies/5e7655f1bc0288ac954f21a4
-and add query param in insomnia
+and add a JSON in the body of the request in Insomnia with date and review like that : {"date": "2019-03-04", "review": "😍 🔥"}
 
 
 

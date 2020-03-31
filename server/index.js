@@ -210,22 +210,26 @@ app.get("/movies/search/:id", (request, response) => {
 //Save a watched date and a review
 app.post("/movies/:id", (request, response) => {
   try {
-    let date_= request.query.date || null;
-    let review_= request.query.review || null;
+    //console.log(request.body.date);
+    
+    let date_= request.body.date || null;
+    let review_= request.body.review || null;
     var movie_id = request.params.id.toString();
     var data= {movie_id,date_,review_};
-    console.log(data);
+    //console.log(data);
     
     
-    var this_movie = { "id": movie_id };
+    var id_movie = { "id": movie_id };
     //var new_values = { $set: {date: date_, review: review_ }};
     var new_values = {date: date_, review: review_ };
 
 
-    collection_movie.find(this_movie).toArray( (error, res) => {
+    collection_movie.find(id_movie).toArray( (error, res) => {
       if(error) {
         return response.status(500).send(error);
       }
+
+      var this_movie = { "movie.id": movie_id };
 
       //response.send(res);
       //console.log({movie : res[0], review : new_values});
@@ -235,26 +239,9 @@ app.post("/movies/:id", (request, response) => {
             return response.status(500).send(error);
         }
         
-        response.send(res_final);
+        response.send({movie:res[0], review:new_values});
         });
-
     });
-    /*
-
-    collection_movie.find(this_movie).toArray((error, res) => {
-      if(error) {
-        return response.status(500).send(error);
-      }
-      collection_review.updateOne(this_movie, res, { upsert: true } , (error, res_final) => {
-        if(error) {
-            return response.status(500).send(error);
-        }
-        
-        response.send(res_final);
-        });
-      //response.send(res);
-    });*/
-    
   } catch (error) {
 console.log(error)
 } 
