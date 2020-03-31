@@ -2,14 +2,13 @@ const cors = require('cors');
 const express = require('express');
 const helmet = require('helmet');
 
-const {PORT, DENZEL_IMDB_ID} = require('./constants');
+const {PORT, DENZEL_IMDB_ID, LIMIT_SEARCH, METASOCRE_SEARCH, MONGO_URL, DBNAME} = require('./constants');
 
 const assert = require('assert');
 const MongoClient = require('mongodb').MongoClient;
 const imdb = require('./imdb');
 
-const url = 'mongodb+srv://dbUser1:jupiter@cluster0-ufodu.mongodb.net/test?retryWrites=true&w=majority';
-const dbName = 'IMDB';
+
 const METASCORE = 77;
 
 const app = express();
@@ -30,22 +29,22 @@ app.get('/', (request, response) => {
 
 app.listen(PORT, () => {
   console.log(`📡 Running on port ${PORT}`)
-  MongoClient.connect(url, { useNewUrlParser: true }, (error, client) => {
+  MongoClient.connect(MONGO_URL, { useNewUrlParser: true }, (error, client) => {
       if(error) {
           throw error;
       }
-      database = client.db(dbName);
+      database = client.db(DBNAME);
       collection_movie = database.collection("movies");
       collection_awesome = database.collection("awesome");
       collection_review = database.collection("reviews");
-      console.log("Connected to databse named `" + dbName + "`!");
+      console.log("Connected to databse named `" + DBNAME + "`!");
   });
 });
 
 
 // Get all the movies in the database
 app.get("/movies/all", (request, response) => {
-  collection_movie.find({}).toArray((error, res) => {
+  collection_movie.find({}).sort( { "metascore": -1 } ).toArray((error, res) => {
       if(error) {
           return response.status(500).send(error);
       }
@@ -56,7 +55,7 @@ app.get("/movies/all", (request, response) => {
 
 // Get all the denzel movies in the database
 app.get("/movies/all/denzel", (request, response) => {
-  collection_movie.find({"actor_id": DENZEL_IMDB_ID}).toArray((error, rse) => {
+  collection_movie.find({"actor_id": DENZEL_IMDB_ID}).toArray((error, res) => {
       if(error) {
           return response.status(500).send(error);
       }
@@ -66,35 +65,32 @@ app.get("/movies/all/denzel", (request, response) => {
 
 
 
-
-
-// Populate the database with all the movies from IMDb from actor with a specific id
+// Populate the database with all the movies from IMDb for an actor with a specific id
 app.get('/movies/populate/:id', async (request, response) => {
+  try {
+    const actor_id = request.params.id;
+    const movies = await imdb(actor_id);
+    const awesome = movies.filter(movie => movie.metascore >= METASCORE);
+  
+    collection_movie.deleteMany({"actor_id": actor_id});
+    collection_awesome.deleteMany({"actor_id": actor_id});
 
-  const actor_id = request.params.id;
-  const movies = await imdb(actor_id);
-  const awesome = movies.filter(movie => movie.metascore >= METASCORE);
-
-  collection_movie.deleteMany({"actor_id": actor_id});
-  collection_awesome.deleteMany({"actor_id": actor_id});
-
-  //collection_movie.insertMany(movies);
-  //collection_awesome.insertMany(awesome);
-
-
-
-
-  collection_movie.insertMany(movies, (error, res_movies) => { 
-    if(error) {
-      return response.status(500).send(error);
-    }
-    collection_awesome.insertMany(awesome, (error, res_awesome) => {
+    collection_movie.insertMany(movies, (error, res_movies) => { 
       if(error) {
         return response.status(500).send(error);
       }
-      response.send({'total_movies_inserted': res_movies.ops.length, 'total_movies_awesome_inserted': res_awesome.ops.length});
+      collection_awesome.insertMany(awesome, (error, res_awesome) => {
+        if(error) {
+          return response.status(500).send(error);
+        }
+        response.send({'total_movies_inserted': res_movies.ops.length, 'total_movies_awesome_inserted': res_awesome.ops.length});
+      });
     });
-  });
+
+  } catch (error) {
+    console.log(error);
+  }
+ 
   //response.send({'total_movies_inserted': movies.length, 'total_movies_awesome_inserted': awesome.length});
 });
 
@@ -104,9 +100,7 @@ app.get('/movies/populate/:id', async (request, response) => {
 app.get('/movies/count', (request, response) => {
 
   //let total_movies;
-  //let total_awesome
-  // Use connect method to connect to the server
-
+  //let total_awesome;
   collection_movie.find().toArray((error, res_movie) => {
     if(error) {
         return response.status(500).send(error);
@@ -129,7 +123,6 @@ app.get('/movies/count/:id', (request, response) => {
 
   //let total_movies;
   //let total_awesome
-  // Use connect method to connect to the server
   const actor_id = request.params.id;
   collection_movie.find({"actor_id": actor_id}).toArray((error, res_movie) => {
     if(error) {
@@ -155,57 +148,96 @@ app.get("/movies", (request, response) => {
       }
 
       var number_of_movies = result.length;
-      var random_value = Math.floor(Math.random() * (number_of_movies));
-      response.send(result[random_value]);
-      //console.log("random value=", random_value);
+      var random_int = Math.floor(Math.random() * (number_of_movies));
+      response.send(result[random_int]);
+      //console.log("the random int was : ", random_int);
   });
-})
-
-
-
-
-
-
-//Search for Denzel's movies. 
-app.get("/movies/search", (request, response) => {
-  try {
-      let limit= request.query.limit || 5;
-      let metascore_= request.query.metascore || 0;
-      console.log("limit: " + limit)
-      metascore_= parseInt(metascore_,10)
-      console.log('metascore: ' + metascore_ + ' type: ' + typeof metascore_);
-
-      var greater_query={$gt:metascore_}
-      //var greater_query={$gt:76}
-
-      collection_movie.find({"actor_id": DENZEL_IMDB_ID,"metascore" : greater_query}).sort( { "metascore": -1 } ).toArray((error, result) => {
-          if(error) {
-              return response.status(500).send(error);
-          }
-          response.send(result.slice(1,limit+1));
-      });
-} catch (error) {
-  console.log(error)
-}
 });
 
-//Save a watched date and a review.
-app.post("/movies/:id", (request, response) => {
-   try {
-      let date= request.query.date || null;
-      let review= request.query.review || null;
-      var movie_id=request.params.id.toString();
-      var data= {movie_id,date,review};
-      console.log(data);
-      collection_review.insertOne(data, (error, result) => {
+
+
+// Search for Denzel's movies
+app.get("/movies/search", (request, response) => {
+  try {
+    let limit= request.query.limit || 5;
+    limit = parseInt(limit, 10);
+    let metascore_= request.query.metascore || 0;
+    //console.log("limit: " + limit + ' type: ' + typeof limit);
+    metascore_= parseInt(metascore_, 10)
+    //console.log('metascore: ' + metascore_ + ' type: ' + typeof metascore_);
+
+    var greater_query={$gt:metascore_}
+
+    collection_movie.find({"actor_id": DENZEL_IMDB_ID, "metascore" : greater_query}).sort( { "metascore": -1 } ).toArray((error, res) => {
       if(error) {
-          return response.status(500).send(error);
+        return response.status(500).send(error);
       }
-      response.send(data);
-  });
-} catch (error) {
+      response.send({"limit": limit,
+      "total": res.length,
+      "results": res.slice(0, limit)});
+    });
+  } catch (error) {
   console.log(error)
-}
+}});
+
+
+
+// Search for movies of a specific actor
+app.get("/movies/search/:id", (request, response) => {
+  try {
+    const actor_id = request.params.id;
+    let limit= request.query.limit || LIMIT_SEARCH;
+    limit = parseInt(limit);
+    let metascore_= request.query.metascore || METASOCRE_SEARCH;
+    metascore_= parseInt(metascore_);
+
+    var greater_query={$gte:metascore_};
+
+    collection_movie.find({"actor_id": actor_id, "metascore" : greater_query}).sort( { "metascore": -1 } ).toArray((error, res) => {
+      if(error) {
+        return response.status(500).send(error);
+      }
+      response.send({"limit": limit,
+      "total": res.length,
+      "results": res.slice(0, limit)});
+    });
+  } catch (error) {
+  console.log(error)
+}});
+
+
+
+//Save a watched date and a review
+app.post("/movies/:id", (request, response) => {
+  try {
+    let date_= request.query.date || null;
+    let review_= request.query.review || null;
+    var movie_id=request.params.id.toString();
+    var data= {movie_id,date_,review_};
+    console.log(data);
+    
+    collection_review.deleteOne({"movie_id": movie_id});
+    collection_review.insertOne(data, (error, res) => {
+    if(error) {
+      return response.status(500).send(error);
+    }
+
+    response.send(res.ops);
+    //var myquery = { "_id": new ObjectId(movie_id) };
+    /*
+    var myquery = { "id": movie_id };
+    var newvalues = { $set: {date: date_, review: review_ }};
+
+    collection_movie.update(myquery, newvalues, { upsert: true } ,(error, result) => {
+    if(error) {
+        return response.status(500).send(error);
+    }
+    */
+    //response.send(result.ops);
+    });
+  } catch (error) {
+console.log(error)
+} 
   
 });
 
