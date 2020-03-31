@@ -45,23 +45,22 @@ app.listen(PORT, () => {
 
 // Get all the movies in the database
 app.get("/movies/all", (request, response) => {
-  collection_movie.find({}).toArray((error, result) => {
+  collection_movie.find({}).toArray((error, res) => {
       if(error) {
           return response.status(500).send(error);
       }
-      response.send(result);
+      response.send(res);
   });
 });
 
 
 // Get all the denzel movies in the database
-app.get("/movies/all/:id", (request, response) => {
-  const actor_id = request.params.id;
-  collection_movie.find({"actor_id": actor_id}).toArray((error, result) => {
+app.get("/movies/all/denzel", (request, response) => {
+  collection_movie.find({"actor_id": DENZEL_IMDB_ID}).toArray((error, rse) => {
       if(error) {
           return response.status(500).send(error);
       }
-      response.send(result);
+      response.send(res);
   });
 });
 
@@ -70,27 +69,38 @@ app.get("/movies/all/:id", (request, response) => {
 
 
 // Populate the database with all the movies from IMDb from actor with a specific id
-app.get('/movies/populate/:actor_id', async (request, response) => {
+app.get('/movies/populate/:id', async (request, response) => {
 
-  const actor_id = request.params.actor_id;
+  const actor_id = request.params.id;
   const movies = await imdb(actor_id);
   const awesome = movies.filter(movie => movie.metascore >= METASCORE);
 
   collection_movie.deleteMany({"actor_id": actor_id});
   collection_awesome.deleteMany({"actor_id": actor_id});
 
-  collection_movie.insertMany(movies);
-  collection_awesome.insertMany(awesome);
+  //collection_movie.insertMany(movies);
+  //collection_awesome.insertMany(awesome);
 
-  //console.log(movies);
-  //console.log("AWESOME MOVIES");
-  //console.log(awesome);
-  response.send({'total_movies_inserted': movies.length, 'total_movies_awesome_inserted': awesome.length});
+
+
+
+  collection_movie.insertMany(movies, (error, res_movies) => { 
+    if(error) {
+      return response.status(500).send(error);
+    }
+    collection_awesome.insertMany(awesome, (error, res_awesome) => {
+      if(error) {
+        return response.status(500).send(error);
+      }
+      response.send({'total_movies_inserted': res_movies.ops.length, 'total_movies_awesome_inserted': res_awesome.ops.length});
+    });
+  });
+  //response.send({'total_movies_inserted': movies.length, 'total_movies_awesome_inserted': awesome.length});
 });
 
 
 
-// Count the number of movies in the database (movies and awesome movies)
+// Count the number of movies (movies and awesome movies) in the database 
 app.get('/movies/count', (request, response) => {
 
   //let total_movies;
@@ -106,12 +116,35 @@ app.get('/movies/count', (request, response) => {
           return response.status(500).send(error);
       }
       
-      response.send({"total_movie":res_movie.length, "total_awesome":res_awesome.length});
+      response.send({"total_movie": res_movie.length, "total_awesome": res_awesome.length});
     });
   });
   //const total_awesome = collection_awesome.count(); 
 });
 
+
+
+// Count the number of movies (movies and awesome movies) in the database for a specific actor id
+app.get('/movies/count/:id', (request, response) => {
+
+  //let total_movies;
+  //let total_awesome
+  // Use connect method to connect to the server
+  const actor_id = request.params.id;
+  collection_movie.find({"actor_id": actor_id}).toArray((error, res_movie) => {
+    if(error) {
+        return response.status(500).send(error);
+    }
+    collection_awesome.find({"actor_id": actor_id}).toArray((error, res_awesome) => {
+      if(error) {
+          return response.status(500).send(error);
+      }
+      
+      response.send({"total_movie":res_movie.length, "total_awesome":res_awesome.length});
+    });
+  });
+  //const total_awesome = collection_awesome.count(); 
+});
 
 
 // Fetch a random must-watch movie
