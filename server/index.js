@@ -101,19 +101,19 @@ app.get('/movies/count', (request, response) => {
 
   //let total_movies;
   //let total_awesome;
-  collection_movie.find().toArray((error, res_movie) => {
+
+  collection_movie.count({}, (error, res_movie) => {
     if(error) {
         return response.status(500).send(error);
     }
-    collection_awesome.find().toArray((error, res_awesome) => {
+    collection_awesome.count({}, (error, res_awesome) => {
       if(error) {
           return response.status(500).send(error);
       }
       
-      response.send({"total_movie": res_movie.length, "total_awesome": res_awesome.length});
+      response.send({"total_movie": res_movie, "total_awesome": res_awesome});
     });
-  });
-  //const total_awesome = collection_awesome.count(); 
+  }); 
 });
 
 
@@ -124,19 +124,19 @@ app.get('/movies/count/:id', (request, response) => {
   //let total_movies;
   //let total_awesome
   const actor_id = request.params.id;
-  collection_movie.find({"actor_id": actor_id}).toArray((error, res_movie) => {
+
+  collection_movie.count({"actor_id": actor_id}, (error, res_movie) => {
     if(error) {
         return response.status(500).send(error);
     }
-    collection_awesome.find({"actor_id": actor_id}).toArray((error, res_awesome) => {
+    collection_awesome.count({"actor_id": actor_id}, (error, res_awesome) => {
       if(error) {
           return response.status(500).send(error);
       }
       
-      response.send({"total_movie":res_movie.length, "total_awesome":res_awesome.length});
+      response.send({"total_movie": res_movie, "total_awesome": res_awesome});
     });
-  });
-  //const total_awesome = collection_awesome.count(); 
+  }); 
 });
 
 
@@ -212,32 +212,50 @@ app.post("/movies/:id", (request, response) => {
   try {
     let date_= request.query.date || null;
     let review_= request.query.review || null;
-    var movie_id=request.params.id.toString();
+    var movie_id = request.params.id.toString();
     var data= {movie_id,date_,review_};
     console.log(data);
     
-    collection_review.deleteOne({"movie_id": movie_id});
-    collection_review.insertOne(data, (error, res) => {
-    if(error) {
-      return response.status(500).send(error);
-    }
+    
+    var this_movie = { "id": movie_id };
+    //var new_values = { $set: {date: date_, review: review_ }};
+    var new_values = {date: date_, review: review_ };
 
-    response.send(res.ops);
-    //var myquery = { "_id": new ObjectId(movie_id) };
-    /*
-    var myquery = { "id": movie_id };
-    var newvalues = { $set: {date: date_, review: review_ }};
 
-    collection_movie.update(myquery, newvalues, { upsert: true } ,(error, result) => {
-    if(error) {
+    collection_movie.find(this_movie).toArray( (error, res) => {
+      if(error) {
         return response.status(500).send(error);
-    }
-    */
-    //response.send(result.ops);
+      }
+
+      //response.send(res);
+      //console.log({movie : res[0], review : new_values});
+      
+      collection_review.update(this_movie, {movie:res[0], review:new_values}, { upsert: true } , (error, res_final) => {
+        if(error) {
+            return response.status(500).send(error);
+        }
+        
+        response.send(res_final);
+        });
+
     });
+    /*
+
+    collection_movie.find(this_movie).toArray((error, res) => {
+      if(error) {
+        return response.status(500).send(error);
+      }
+      collection_review.updateOne(this_movie, res, { upsert: true } , (error, res_final) => {
+        if(error) {
+            return response.status(500).send(error);
+        }
+        
+        response.send(res_final);
+        });
+      //response.send(res);
+    });*/
+    
   } catch (error) {
 console.log(error)
 } 
-  
 });
-
