@@ -10,7 +10,7 @@ curl -H "Accept: application/json" http://localhost:9292/movies/tt10016180
 
 curl -H "Accept: application/json" http://localhost:9292/movies/search?limit=5&metascore=77
 
-curl -X POST -d '{"date": "2019-03-04", "review": "excellent"}' -H "Content-Type:application/json" http://localhost:9292/movies/tt0328107
+curl -X POST -d '{"date": "2019-03-04", "review": "good"}' -H "Content-Type:application/json" http://localhost:9292/movies/tt0328107
 
 but sometimes it doesn't work in CDM windows like that so type this:
 curl -X POST --data "{\"date\": \"2019-03-04\", \"review\": \"good\"}" -H "Content-Type:application/json" http://localhost:9292/movies/tt0328107
