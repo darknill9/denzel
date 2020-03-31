@@ -34,7 +34,7 @@ const getFilmography = async actor => {
  * @param  {String} link
  * @return {Object}
  */
-const getMovie = async link => {
+const getMovie = async (link, actor_id) => {
   try {
     const response = await axios(link);
     const {data} = response;
@@ -57,7 +57,8 @@ const getMovie = async link => {
           .text()
           .replace(',', '.')
       ),
-      'year': Number($('#titleYear a').text())
+      'year': Number($('#titleYear a').text()),
+      'actor_id':actor_id
     };
   } catch (error) {
     console.error(error);
@@ -76,7 +77,7 @@ module.exports = async actor => {
 
   const promises = filmography.map(filmo => {
     return limit(async () => {
-      return await getMovie(filmo.link);
+      return await getMovie(filmo.link, actor);
     });
   });
 
