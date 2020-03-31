@@ -1,5 +1,6 @@
 // -------------------- REST API -----------------------
 
+CMD commands :
 
 curl -H "Accept: application/json" http://localhost:9292/movies/populate/nm0000243
 
@@ -9,9 +10,21 @@ curl -H "Accept: application/json" http://localhost:9292/movies/tt10016180
 
 curl -H "Accept: application/json" http://localhost:9292/movies/search?limit=5&metascore=77
 
-Post : 
+curl -X POST -d '{"date": "2019-03-04", "review": "😍 🔥"}' -H "Content-Type: application/json" http://localhost:9292/movies/tt0328107
+
+
+Insomnia for example : 
+
+http://localhost:9292/movies/populate/nm0000243
+
+http://localhost:9292/movies
+
+http://localhost:9292/movies/tt10016180
+
+http://localhost:9292/movies/search?limit=5&metascore=77
+
 http://localhost:9292/movies/5e7655f1bc0288ac954f21a4
-and add query param with insomnia for example!
+and add query param in insomnia
 
 
 
