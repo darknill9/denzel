@@ -1,0 +1,18 @@
+// -------------------- REST API -----------------------
+
+
+curl -H "Accept: application/json" http://localhost:9292/movies/populate/nm0000243
+
+curl -H "Accept: application/json" http://localhost:9292/movies
+
+curl -H "Accept: application/json" http://localhost:9292/movies/tt10016180
+
+curl -H "Accept: application/json" http://localhost:9292/movies/search?limit=5&metascore=77
+
+Post : 
+http://localhost:9292/movies/5e7655f1bc0288ac954f21a4
+and add query param with insomnia for example!
+
+
+
+// -------------------- GRAPHQL API -----------------------
